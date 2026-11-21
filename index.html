@@ -108,6 +108,9 @@ const produits=[
 ["Chiffres lumineux LED",20,"🎉"]
 ];
 
+// Clé publique Supabase : les modifications sont protégées par RLS.
+const SUPABASE_URL="https://ohndzqyttbpgrgvnfpgn.supabase.co";
+const SUPABASE_PUBLIC_KEY="sb_publishable_AewdKiEcFtXG1igghef9qQ_lFziTiw8";
 let reservations={};
 let disponibilitesChargees=false;
 
@@ -171,59 +174,59 @@ materiel.appendChild(option);
 });
 
 async function chargerReservations(){
-disponibilitesChargees=false;
-envoyer.disabled=true;
-statut.textContent="Chargement des disponibilités...";
+ disponibilitesChargees=false;
+ envoyer.disabled=true;
+ statut.textContent="Chargement des disponibilités...";
 
-try{
-const reponse=await fetch(
-"reservations.json?t="+Date.now(),
-{cache:"no-store"}
-);
-
-if(!reponse.ok){
-throw new Error("Fichier indisponible");
-}
-
-const donnees=await reponse.json();
-
-if(!donnees||typeof donnees!=="object"||Array.isArray(donnees)){
-throw new Error("Format incorrect");
-}
-
-for(const plages of Object.values(donnees)){
-if(!Array.isArray(plages)){
-throw new Error("Format des réservations incorrect");
-}
-for(const plage of plages){
-if(!Array.isArray(plage)||plage.length!==2||
-!plage.every(d=>typeof d==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(d))||
-plage[1]<plage[0]){
-throw new Error("Dates de réservation incorrectes");
-}
-}
-}
-
-reservations=donnees;
-disponibilitesChargees=true;
-envoyer.disabled=false;
-statut.textContent=
-"Disponibilités indicatives, mises à jour à l'ouverture de la page. Confirmation obligatoire par BAT LOCATION.";
-
-if(debut.value&&fin.value&&periodeReservee(debut.value,fin.value)){
-message.textContent="La période choisie n'est plus disponible.";
-}
-}catch(erreur){
-reservations={};
-disponibilitesChargees=false;
-envoyer.disabled=true;
-statut.textContent=
-"Impossible de vérifier les réservations. Réessayez en actualisant la page.";
-message.textContent=
-"Les demandes sont temporairement désactivées.";
-}
-
-afficherCalendrier();
+ try{
+  const nouvellesReservations={};
+  let offset=0;
+  const taillePage=1000;
+  while(true){
+   const url=SUPABASE_URL+"/rest/v1/reservations?select=materiel_id,date_debut,date_fin&order=id.asc&limit="+taillePage+"&offset="+offset;
+   const reponse=await fetch(url,{
+    method:"GET",
+    cache:"no-store",
+    headers:{
+     "apikey":SUPABASE_PUBLIC_KEY,
+     "Accept":"application/json"
+    }
+   });
+   if(!reponse.ok)throw new Error("Erreur Supabase : "+reponse.status);
+   const lignes=await reponse.json();
+   if(!Array.isArray(lignes))throw new Error("Réponse inattendue");
+   for(const ligne of lignes){
+    const id=ligne.materiel_id;
+    const d=ligne.date_debut;
+    const f=ligne.date_fin;
+    if(!Number.isInteger(id)||id<0||id>=produits.length||
+       typeof d!=="string"||typeof f!=="string"||
+       !/^\d{4}-\d{2}-\d{2}$/.test(d)||
+       !/^\d{4}-\d{2}-\d{2}$/.test(f)||f<d){
+     throw new Error("Données de réservation incorrectes");
+    }
+    if(!nouvellesReservations[id])nouvellesReservations[id]=[];
+    nouvellesReservations[id].push([d,f]);
+   }
+   if(lignes.length<taillePage)break;
+   offset+=taillePage;
+  }
+  reservations=nouvellesReservations;
+  disponibilitesChargees=true;
+  envoyer.disabled=false;
+  statut.textContent="Disponibilités actualisées depuis BAT LOCATION. Toute demande reste soumise à confirmation.";
+  if(debut.value&&fin.value&&periodeReservee(debut.value,fin.value)){
+   message.textContent="La période choisie n'est plus disponible.";
+  }
+ }catch(erreur){
+  console.error("Chargement des réservations :",erreur);
+  reservations={};
+  disponibilitesChargees=false;
+  envoyer.disabled=true;
+  statut.textContent="Impossible de vérifier les réservations. Réessayez en actualisant la page.";
+  message.textContent="Les demandes sont temporairement désactivées.";
+ }
+ afficherCalendrier();
 }
 
 function dateReservee(date){
@@ -434,6 +437,10 @@ afficherCalendrier();
 
 afficherCalendrier();
 chargerReservations();
+// Rafraîchir les disponibilités au retour sur l'onglet.
+document.addEventListener("visibilitychange",()=>{
+ if(!document.hidden)chargerReservations();
+});
 </script>
 </body>
 </html>
