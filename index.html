@@ -4,6 +4,378 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#172b40">
+<title>BAT LOCATION - Location de matériel</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f6fa;color:#172b40}
+header{background:#172b40;color:white;text-align:center;padding:28px 15px}
+header h1{margin:0;font-size:32px}
+header p{margin-bottom:0}
+main{max-width:1000px;margin:auto;padding:22px}
+h2{text-align:center}
+.catalogue{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+.produit{background:white;padding:20px;border-radius:14px;box-shadow:0 2px 10px #0001}
+.emoji{font-size:55px;text-align:center}
+.prix{font-size:22px;font-weight:bold;color:#087ac0}
+button{background:#087ac0;color:white;border:0;border-radius:9px;padding:12px 15px;cursor:pointer;font-weight:bold}
+button:hover{background:#075b91}
+button:disabled{opacity:.4;cursor:not-allowed}
+.reservation{margin-top:30px;background:white;padding:22px;border-radius:14px}
+label{display:block;margin:12px 0 5px}
+select,input{width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;font-size:16px}
+#message{color:#a11919;font-weight:bold}
+footer{text-align:center;padding:25px;color:#666}
+#calendrier-location{margin:20px 0;padding:15px;background:#f3f6fa;border-radius:12px}
+.navigation{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}
+.navigation strong{text-transform:capitalize;text-align:center}
+#calendrier{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.entete{text-align:center;font-weight:bold;padding:8px 0}
+.jour{min-width:0;padding:12px 2px;text-align:center;border-radius:7px;border:2px solid transparent;font-size:15px}
+.disponible{background:#c8f0d0;color:#176b35;cursor:pointer}
+.disponible:hover{background:#a4e6b4}
+.reserve{background:#f5c5c5;color:#a11919;cursor:not-allowed}
+.passe{background:#e6e6e6;color:#888;cursor:not-allowed}
+.selectionne{border-color:#087ac0;background:#a9d7f5}
+#statut{font-size:13px;color:#536477}
+#periode{font-weight:bold;color:#087ac0}
+@media(max-width:450px){
+main{padding:12px}
+.reservation{padding:14px}
+#calendrier-location{padding:10px}
+.jour{padding:10px 0;font-size:13px}
+.navigation button{padding:10px}
+}
+</style>
+</head>
+<body>
+<header>
+<h1>BAT LOCATION</h1>
+<p>Location de matériel à Herblay-sur-Seine (95)</p>
+</header>
+<main>
+<h2>Notre matériel à louer</h2>
+<div class="catalogue" id="catalogue"></div>
+
+<section class="reservation" id="reservation">
+<h2>Demander une réservation</h2>
+<p>Choisissez votre matériel et vos dates. Votre demande sera confirmée uniquement après notre accord.</p>
+
+<label for="materiel">Matériel</label>
+<select id="materiel"></select>
+
+<div id="calendrier-location">
+<h3>Calendrier des disponibilités</h3>
+<p>🟢 Disponible | 🔴 Réservé | 🔵 Sélectionné</p>
+<div class="navigation">
+<button type="button" id="precedent">◀</button>
+<strong id="mois-titre"></strong>
+<button type="button" id="suivant">▶</button>
+</div>
+<div id="calendrier"></div>
+<p id="periode">Sélectionnez une date de début, puis une date de fin.</p>
+<p id="statut">Les dates vertes sont indicatives. Confirmation obligatoire par BAT LOCATION.</p>
+</div>
+
+<label for="debut">Date de début</label>
+<input type="date" id="debut">
+
+<label for="fin">Date de fin</label>
+<input type="date" id="fin">
+
+<p id="message" role="alert"></p>
+<button type="button" onclick="reserver()">Envoyer la demande sur WhatsApp</button>
+</section>
+</main>
+
+<footer>BAT LOCATION - Herblay-sur-Seine (95)</footer>
+
+<script>
+const produits=[
+["Shampouineuse Kärcher Puzzi 8/1",25,"🧼"],
+["Plaque vibrante",35,"🔨"],
+["Fendeuse de bûches 7T",40,"🪵"],
+["Broyeur de végétaux",30,"🌿"],
+["Taille-haie Makita",25,"🌳"],
+["Nettoyeur haute pression K2",20,"💦"],
+["Échelle multifonction",15,"🪜"],
+["Brouette 100 L",20,"🛠️"],
+["Perforateur DeWalt",45,"🔧"],
+["Ponceuse vibrante",15,"🪚"],
+["Caméra endoscopique",15,"📷"],
+["Chiffres lumineux LED",20,"🎉"]
+];
+
+/*
+RÉSERVATIONS CONFIRMÉES
+
+Pour l'instant, aucune réservation n'est enregistrée.
+
+Plus tard, nous relierons ce calendrier à un fichier
+de réservations modifiable uniquement par le propriétaire.
+
+Exemple de structure :
+{
+  "0": [["2026-12-05","2026-12-07"]],
+  "1": [["2026-12-10","2026-12-10"]]
+}
+
+Les numéros correspondent à la position du matériel
+dans le catalogue, en commençant par zéro.
+*/
+let reservations={};
+
+const catalogue=document.getElementById("catalogue");
+const materiel=document.getElementById("materiel");
+const debut=document.getElementById("debut");
+const fin=document.getElementById("fin");
+const message=document.getElementById("message");
+const calendrier=document.getElementById("calendrier");
+
+const maintenant=new Date();
+const dateLocale=[
+maintenant.getFullYear(),
+String(maintenant.getMonth()+1).padStart(2,"0"),
+String(maintenant.getDate()).padStart(2,"0")
+].join("-");
+
+let moisAffiche=maintenant.getMonth();
+let anneeAffiche=maintenant.getFullYear();
+
+debut.min=dateLocale;
+fin.min=dateLocale;
+
+produits.forEach((p,i)=>{
+const article=document.createElement("article");
+article.className="produit";
+
+const emoji=document.createElement("div");
+emoji.className="emoji";
+emoji.textContent=p[2];
+
+const nom=document.createElement("h3");
+nom.textContent=p[0];
+
+const prix=document.createElement("p");
+prix.className="prix";
+prix.textContent="À partir de "+p[1]+" € / 24 h";
+
+const bouton=document.createElement("button");
+bouton.textContent="Demander une réservation";
+bouton.onclick=()=>{
+materiel.value=String(i);
+reinitialiserDates();
+afficherCalendrier();
+document.getElementById("reservation").scrollIntoView({behavior:"smooth"});
+};
+
+article.append(emoji,nom,prix,bouton);
+catalogue.appendChild(article);
+
+const option=document.createElement("option");
+option.value=String(i);
+option.textContent=p[0];
+materiel.appendChild(option);
+});
+
+function dateReservee(date){
+const plages=reservations[materiel.value]||[];
+return plages.some(plage=>date>=plage[0]&&date<=plage[1]);
+}
+
+function periodeReservee(d,f){
+const jour=new Date(d+"T12:00:00");
+const dernier=new Date(f+"T12:00:00");
+
+while(jour<=dernier){
+const date=[
+jour.getFullYear(),
+String(jour.getMonth()+1).padStart(2,"0"),
+String(jour.getDate()).padStart(2,"0")
+].join("-");
+
+if(dateReservee(date))return true;
+jour.setDate(jour.getDate()+1);
+}
+return false;
+}
+
+function reinitialiserDates(){
+debut.value="";
+fin.value="";
+message.textContent="";
+document.getElementById("periode").textContent=
+"Sélectionnez une date de début, puis une date de fin.";
+}
+
+function changerMois(direction){
+const nouveau=new Date(anneeAffiche,moisAffiche+direction,1);
+moisAffiche=nouveau.getMonth();
+anneeAffiche=nouveau.getFullYear();
+afficherCalendrier();
+}
+
+document.getElementById("precedent").onclick=()=>changerMois(-1);
+document.getElementById("suivant").onclick=()=>changerMois(1);
+
+function choisirDate(date){
+message.textContent="";
+
+if(!debut.value||fin.value||date<debut.value){
+debut.value=date;
+fin.value="";
+}else{
+if(periodeReservee(debut.value,date)){
+message.textContent="Cette période comprend une date déjà réservée. Choisissez d'autres dates.";
+return;
+}
+fin.value=date;
+}
+
+mettreAJourPeriode();
+afficherCalendrier();
+}
+
+function mettreAJourPeriode(){
+const zone=document.getElementById("periode");
+
+if(debut.value&&fin.value){
+zone.textContent="Du "+debut.value+" au "+fin.value;
+}else if(debut.value){
+zone.textContent="Début : "+debut.value+" — choisissez la fin.";
+}else{
+zone.textContent="Sélectionnez une date de début, puis une date de fin.";
+}
+}
+
+function afficherCalendrier(){
+calendrier.innerHTML="";
+
+document.getElementById("mois-titre").textContent=
+new Date(anneeAffiche,moisAffiche,1).toLocaleDateString("fr-FR",{
+month:"long",year:"numeric"
+});
+
+const moisActuel=new Date(
+maintenant.getFullYear(),maintenant.getMonth(),1
+);
+
+document.getElementById("precedent").disabled=
+new Date(anneeAffiche,moisAffiche,1)<=moisActuel;
+
+["L","M","M","J","V","S","D"].forEach(j=>{
+const titre=document.createElement("div");
+titre.className="entete";
+titre.textContent=j;
+calendrier.appendChild(titre);
+});
+
+const decalage=
+(new Date(anneeAffiche,moisAffiche,1).getDay()+6)%7;
+
+for(let i=0;i<decalage;i++){
+calendrier.appendChild(document.createElement("div"));
+}
+
+const nombreJours=
+new Date(anneeAffiche,moisAffiche+1,0).getDate();
+
+for(let jour=1;jour<=nombreJours;jour++){
+const date=[
+anneeAffiche,
+String(moisAffiche+1).padStart(2,"0"),
+String(jour).padStart(2,"0")
+].join("-");
+
+const caseJour=document.createElement("button");
+caseJour.type="button";
+caseJour.className="jour";
+caseJour.textContent=jour;
+
+if(date<dateLocale){
+caseJour.classList.add("passe");
+caseJour.disabled=true;
+}else if(dateReservee(date)){
+caseJour.classList.add("reserve");
+caseJour.disabled=true;
+}else{
+caseJour.classList.add("disponible");
+caseJour.onclick=()=>choisirDate(date);
+}
+
+if(
+date===debut.value||
+date===fin.value||
+(debut.value&&fin.value&&date>debut.value&&date<fin.value)
+){
+caseJour.classList.add("selectionne");
+}
+
+calendrier.appendChild(caseJour);
+}
+}
+
+function verifierDates(){
+const d=debut.value;
+const f=fin.value;
+
+if(!d||!f||d<dateLocale||f<d){
+message.textContent="Veuillez choisir des dates valides.";
+return false;
+}
+
+if(periodeReservee(d,f)){
+message.textContent=
+"Ce matériel est déjà réservé sur une partie de cette période.";
+return false;
+}
+
+message.textContent="";
+return true;
+}
+
+function reserver(){
+if(!verifierDates())return;
+
+const nom=produits[Number(materiel.value)][0];
+const texte=
+"Bonjour BAT LOCATION, je souhaite louer "+nom+
+" du "+debut.value+" au "+fin.value+
+". Pouvez-vous confirmer sa disponibilité ?";
+
+window.open(
+"https://wa.me/?text="+encodeURIComponent(texte),
+"_blank",
+"noopener,noreferrer"
+);
+}
+
+materiel.addEventListener("change",()=>{
+reinitialiserDates();
+afficherCalendrier();
+});
+
+debut.addEventListener("change",()=>{
+fin.value="";
+mettreAJourPeriode();
+afficherCalendrier();
+});
+
+fin.addEventListener("change",()=>{
+mettreAJourPeriode();
+afficherCalendrier();
+});
+
+afficherCalendrier();
+</script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BAT LOCATION - Location de matériel</title>
 <style>
 *{box-sizing:border-box}
