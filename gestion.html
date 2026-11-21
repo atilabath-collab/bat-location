@@ -1,0 +1,264 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAT LOCATION - Gestion des réservations</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#f3f6fa;color:#172b40;margin:0}
+header{background:#172b40;color:white;text-align:center;padding:22px}
+main{max-width:700px;margin:auto;padding:16px}
+section{background:white;padding:20px;border-radius:14px;margin:15px 0}
+h1{font-size:25px}
+h2{font-size:20px}
+label{display:block;margin:14px 0 6px;font-weight:bold}
+select,input{width:100%;padding:12px;font-size:16px;border:1px solid #bbb;border-radius:8px}
+button{background:#087ac0;color:white;border:0;border-radius:8px;padding:12px 15px;font-size:15px;cursor:pointer;margin:5px 5px 5px 0}
+button:disabled{opacity:.5}
+.danger{background:#b32626}
+.succes{color:#176b35}
+.erreur{color:#a11919}
+.info{background:#fff4d6;padding:12px;border-radius:8px}
+.resa{border:1px solid #ddd;border-radius:8px;padding:12px;margin:10px 0}
+.resa button{margin-top:8px}
+#liste{margin-top:12px}
+a{color:#087ac0}
+</style>
+</head>
+<body>
+<header>
+<h1>BAT LOCATION</h1>
+<p>Gestion des réservations confirmées</p>
+</header>
+<main>
+<section>
+<h2>1. Charger les réservations</h2>
+<p>Pour éviter d'effacer tes réservations existantes, charge d'abord le fichier actuel.</p>
+<button id="charger">Charger les réservations du site</button>
+<p id="statut"></p>
+<p class="info">Important : cette page est publique. Elle ne modifie pas GitHub automatiquement. Seul ton compte GitHub permet d'enregistrer les changements.</p>
+</section>
+
+<section>
+<h2>2. Ajouter une réservation confirmée</h2>
+<label for="materiel">Matériel</label>
+<select id="materiel"></select>
+<label for="debut">Date de début</label>
+<input id="debut" type="date">
+<label for="fin">Date de fin</label>
+<input id="fin" type="date">
+<button id="ajouter" disabled>Ajouter la réservation</button>
+<p id="message"></p>
+</section>
+
+<section>
+<h2>3. Réservations enregistrées dans le gestionnaire</h2>
+<div id="liste">Charge les réservations pour commencer.</div>
+</section>
+
+<section>
+<h2>4. Mettre à jour le calendrier des clients</h2>
+<p>Après chaque ajout ou suppression, télécharge le nouveau fichier puis remplace son contenu sur GitHub.</p>
+<button id="telecharger" disabled>Télécharger reservations.json</button>
+<p><a href="https://github.com/atilabath-collab/bat-location/blob/main/reservations.json" target="_blank" rel="noopener">Ouvrir reservations.json sur GitHub</a></p>
+<p class="info">Les modifications ne seront visibles par les clients qu'après leur enregistrement sur GitHub. Ne ferme pas cette page avant d'avoir effectué cette étape.</p>
+</section>
+</main>
+
+<script>
+const produits=[
+"Shampouineuse Kärcher Puzzi 8/1",
+"Plaque vibrante",
+"Fendeuse de bûches 7T",
+"Broyeur de végétaux",
+"Taille-haie Makita",
+"Nettoyeur haute pression K2",
+"Échelle multifonction",
+"Brouette 100 L",
+"Perforateur DeWalt",
+"Ponceuse vibrante",
+"Caméra endoscopique",
+"Chiffres lumineux LED"
+];
+
+const materiel=document.getElementById("materiel");
+const debut=document.getElementById("debut");
+const fin=document.getElementById("fin");
+const statut=document.getElementById("statut");
+const message=document.getElementById("message");
+const liste=document.getElementById("liste");
+const ajouter=document.getElementById("ajouter");
+const telecharger=document.getElementById("telecharger");
+
+let reservations={};
+let charge=false;
+let modifie=false;
+
+produits.forEach((nom,i)=>{
+const option=document.createElement("option");
+option.value=String(i);
+option.textContent=nom;
+materiel.appendChild(option);
+});
+
+function verifierStructure(data){
+if(!data||typeof data!=="object"||Array.isArray(data)){
+throw new Error("Format de fichier incorrect");
+}
+for(const [cle,plages] of Object.entries(data)){
+if(!/^\d+$/.test(cle)||Number(cle)>=produits.length||!Array.isArray(plages)){
+throw new Error("Matériel ou réservations incorrects");
+}
+for(const plage of plages){
+if(!Array.isArray(plage)||plage.length!==2||
+!plage.every(d=>typeof d==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(d))||
+plage[1]<plage[0]){
+throw new Error("Dates incorrectes");
+}
+}
+}
+}
+
+async function chargerReservations(){
+if(modifie&&!confirm("Des changements ne sont pas encore enregistrés sur GitHub. Les abandonner ?")){
+return;
+}
+statut.textContent="Chargement...";
+statut.className="";
+try{
+const reponse=await fetch("reservations.json?t="+Date.now(),{cache:"no-store"});
+if(!reponse.ok)throw new Error("Fichier inaccessible");
+const data=await reponse.json();
+verifierStructure(data);
+reservations=data;
+charge=true;
+modifie=false;
+ajouter.disabled=false;
+telecharger.disabled=false;
+statut.textContent="Réservations chargées avec succès.";
+statut.className="succes";
+message.textContent="";
+afficherListe();
+}catch(e){
+charge=false;
+ajouter.disabled=true;
+telecharger.disabled=true;
+statut.textContent="Impossible de charger les réservations. Vérifie que reservations.json existe.";
+statut.className="erreur";
+}
+}
+
+function afficherListe(){
+liste.innerHTML="";
+let nombre=0;
+Object.keys(reservations).sort((a,b)=>Number(a)-Number(b)).forEach(cle=>{
+(reservations[cle]||[]).forEach((plage,index)=>{
+nombre++;
+const bloc=document.createElement("div");
+bloc.className="resa";
+
+const titre=document.createElement("strong");
+titre.textContent=produits[Number(cle)];
+
+const dates=document.createElement("p");
+dates.textContent="Du "+plage[0]+" au "+plage[1];
+
+const supprimer=document.createElement("button");
+supprimer.className="danger";
+supprimer.textContent="Supprimer cette réservation";
+supprimer.onclick=()=>{
+if(!confirm("Supprimer cette réservation ?"))return;
+reservations[cle].splice(index,1);
+if(reservations[cle].length===0)delete reservations[cle];
+modifie=true;
+afficherListe();
+statut.textContent="Modification à enregistrer sur GitHub.";
+statut.className="";
+};
+
+bloc.append(titre,dates,supprimer);
+liste.appendChild(bloc);
+});
+});
+
+if(!nombre){
+liste.textContent="Aucune réservation confirmée.";
+}
+}
+
+function ajouterReservation(){
+if(!charge)return;
+
+const cle=materiel.value;
+const d=debut.value;
+const f=fin.value;
+const aujourdHui=new Date();
+const minimum=[
+aujourdHui.getFullYear(),
+String(aujourdHui.getMonth()+1).padStart(2,"0"),
+String(aujourdHui.getDate()).padStart(2,"0")
+].join("-");
+
+if(!d||!f||f<d||d<minimum){
+message.textContent="Choisis des dates valides, à partir d'aujourd'hui.";
+message.className="erreur";
+return;
+}
+
+const plages=reservations[cle]||[];
+const conflit=plages.some(p=>d<=p[1]&&f>=p[0]);
+
+if(conflit){
+message.textContent="Ce matériel est déjà réservé sur cette période.";
+message.className="erreur";
+return;
+}
+
+if(!confirm("Confirmer cette réservation pour "+produits[Number(cle)]+" du "+d+" au "+f+" ?")){
+return;
+}
+
+if(!reservations[cle])reservations[cle]=[];
+reservations[cle].push([d,f]);
+reservations[cle].sort((a,b)=>a[0].localeCompare(b[0]));
+modifie=true;
+afficherListe();
+message.textContent="Réservation ajoutée. Il reste à enregistrer sur GitHub.";
+message.className="succes";
+statut.textContent="Modifications non encore publiées.";
+statut.className="";
+debut.value="";
+fin.value="";
+}
+
+function telechargerFichier(){
+if(!charge)return;
+const contenu=JSON.stringify(reservations,null,2);
+const blob=new Blob([contenu],{type:"application/json"});
+const url=URL.createObjectURL(blob);
+const lien=document.createElement("a");
+lien.href=url;
+lien.download="reservations.json";
+document.body.appendChild(lien);
+lien.click();
+lien.remove();
+setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+document.getElementById("charger").onclick=chargerReservations;
+ajouter.onclick=ajouterReservation;
+telecharger.onclick=telechargerFichier;
+
+window.addEventListener("beforeunload",e=>{
+if(modifie){
+e.preventDefault();
+e.returnValue="";
+}
+});
+
+chargerReservations();
+</script>
+</body>
+</html>
