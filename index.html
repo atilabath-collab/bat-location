@@ -24,6 +24,33 @@ label{display:block;margin:12px 0 5px}
 select,input{width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;font-size:16px}
 #message{color:#a33}
 footer{text-align:center;padding:25px;color:#666}
+ #calendrier-location {
+  margin: 20px 0;
+  padding: 15px;
+  background: #f3f6fa;
+  border-radius: 12px;
+}
+#calendrier {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+.jour {
+  padding: 10px 3px;
+  text-align: center;
+  border-radius: 7px;
+}
+.disponible {
+  background: #c8f0d0;
+  color: #176b35;
+}
+.reserve {
+  background: #f5c5c5;
+  color: #a11919;
+}
+.selectionne {
+  outline: 2px solid #087ac0;
+} 
 </style>
 </head>
 <body>
@@ -39,6 +66,11 @@ footer{text-align:center;padding:25px;color:#666}
 <p>Choisissez votre matériel et vos dates. La réservation sera confirmée après notre accord.</p>
 <label for="materiel">Matériel</label>
 <select id="materiel"></select>
+ <div id="calendrier-location">
+  <h3>Calendrier des disponibilités</h3>
+  <p>🟢 Disponible | 🔴 Réservé</p>
+  <div id="calendrier"></div>
+</div>
 <label for="debut">Date de début</label>
 <input type="date" id="debut">
 <label for="fin">Date de fin</label>
@@ -103,6 +135,54 @@ const texte="Bonjour BAT LOCATION, je souhaite louer "+nom+
 " du "+d+" au "+f+". Pouvez-vous confirmer sa disponibilité ?";
 window.open("https://wa.me/?text="+encodeURIComponent(texte),"_blank");
 }
+function afficherCalendrier() {
+  const zone = document.getElementById("calendrier");
+  zone.innerHTML = "";
+
+  const maintenant = new Date();
+  const annee = maintenant.getFullYear();
+  const mois = maintenant.getMonth();
+  const premierJour = new Date(annee, mois, 1);
+  const nombreJours = new Date(annee, mois + 1, 0).getDate();
+  const decalage = (premierJour.getDay() + 6) % 7;
+
+  ["L", "M", "M", "J", "V", "S", "D"].forEach(j => {
+    const titre = document.createElement("div");
+    titre.textContent = j;
+    titre.style.textAlign = "center";
+    zone.appendChild(titre);
+  });
+
+  for (let i = 0; i < decalage; i++) {
+    zone.appendChild(document.createElement("div"));
+  }
+
+  for (let jour = 1; jour <= nombreJours; jour++) {
+    const caseJour = document.createElement("div");
+    caseJour.className = "jour disponible";
+    caseJour.textContent = jour;
+
+    const date = new Date(annee, mois, jour);
+    const dateISO = [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0")
+    ].join("-");
+
+    caseJour.onclick = () => {
+      document.querySelectorAll(".jour").forEach(
+        element => element.classList.remove("selectionne")
+      );
+      caseJour.classList.add("selectionne");
+      document.getElementById("debut").value = dateISO;
+      document.getElementById("fin").value = dateISO;
+    };
+
+    zone.appendChild(caseJour);
+  }
+}
+
+afficherCalendrier(); 
 </script>
 </body>
 </html>
