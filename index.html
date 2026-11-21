@@ -2,47 +2,107 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BAT LOCATION</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f3f6fa;
-      text-align: center;
-      color: #172b40;
-    }
-    header {
-      background: #172b40;
-      color: white;
-      padding: 35px 15px;
-    }
-    h1 { margin: 0 0 10px; }
-    main { padding: 30px 20px; }
-    a {
-      display: inline-block;
-      background: #087ac0;
-      color: white;
-      padding: 15px 24px;
-      border-radius: 10px;
-      text-decoration: none;
-      margin-top: 15px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAT LOCATION - Location de matériel</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f6fa;color:#172b40}
+header{background:#172b40;color:white;text-align:center;padding:28px 15px}
+header h1{margin:0;font-size:32px}
+header p{margin-bottom:0}
+main{max-width:1000px;margin:auto;padding:22px}
+h2{text-align:center}
+.catalogue{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+.produit{background:white;padding:20px;border-radius:14px;box-shadow:0 2px 10px #0001}
+.emoji{font-size:55px;text-align:center}
+.prix{font-size:22px;font-weight:bold;color:#087ac0}
+button{background:#087ac0;color:white;border:0;border-radius:9px;padding:12px 15px;cursor:pointer;font-weight:bold}
+button:hover{background:#075b91}
+.reservation{margin-top:30px;background:white;padding:22px;border-radius:14px}
+label{display:block;margin:12px 0 5px}
+select,input{width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;font-size:16px}
+#message{color:#a33}
+footer{text-align:center;padding:25px;color:#666}
+</style>
 </head>
 <body>
-  <header>
-    <h1>BAT LOCATION</h1>
-    <p>Location de matériel à Herblay-sur-Seine (95)</p>
-  </header>
-  <main>
-    <h2>Bienvenue chez BAT LOCATION</h2>
-    <p>Bricolage, nettoyage et événementiel.</p>
-    <p>Réservez votre matériel simplement.</p>
-    <a href="https://sites.google.com/view/bat-location-herblay/accueil">
-      Voir notre matériel
-    </a>
-  </main>
+<header>
+<h1>BAT LOCATION</h1>
+<p>Location de matériel à Herblay-sur-Seine (95)</p>
+</header>
+<main>
+<h2>Notre matériel à louer</h2>
+<div class="catalogue" id="catalogue"></div>
+<section class="reservation">
+<h2>Demander une réservation</h2>
+<p>Choisissez votre matériel et vos dates. La réservation sera confirmée après notre accord.</p>
+<label for="materiel">Matériel</label>
+<select id="materiel"></select>
+<label for="debut">Date de début</label>
+<input type="date" id="debut">
+<label for="fin">Date de fin</label>
+<input type="date" id="fin">
+<p id="message"></p>
+<button onclick="reserver()">Envoyer la demande sur WhatsApp</button>
+</section>
+</main>
+<footer>BAT LOCATION - Herblay-sur-Seine (95)</footer>
+<script>
+const produits=[
+["Shampouineuse Kärcher Puzzi 8/1",25,"🧼"],
+["Plaque vibrante",35,"🔨"],
+["Fendeuse de bûches 7T",40,"🪵"],
+["Broyeur de végétaux",30,"🌿"],
+["Taille-haie Makita",25,"🌳"],
+["Nettoyeur haute pression K2",20,"💦"],
+["Échelle multifonction",15,"🪜"],
+["Brouette 100 L",20,"🛠️"],
+["Perforateur DeWalt",45,"🔧"],
+["Ponceuse vibrante",15,"🪚"],
+["Caméra endoscopique",15,"📷"],
+["Chiffres lumineux LED",20,"🎉"]
+];
+const catalogue=document.getElementById("catalogue");
+const materiel=document.getElementById("materiel");
+produits.forEach((p,i)=>{
+const article=document.createElement("article");
+article.className="produit";
+const emoji=document.createElement("div");
+emoji.className="emoji";emoji.textContent=p[2];
+const nom=document.createElement("h3");nom.textContent=p[0];
+const prix=document.createElement("p");prix.className="prix";
+prix.textContent="À partir de "+p[1]+" € / 24 h";
+const bouton=document.createElement("button");
+bouton.textContent="Demander une réservation";
+bouton.onclick=()=>{
+materiel.value=String(i);
+document.querySelector(".reservation").scrollIntoView({behavior:"smooth"});
+};
+article.append(emoji,nom,prix,bouton);
+catalogue.appendChild(article);
+const option=document.createElement("option");
+option.value=String(i);option.textContent=p[0];
+materiel.appendChild(option);
+});
+const debut=document.getElementById("debut");
+const fin=document.getElementById("fin");
+const aujourdHui=new Date();
+const dateLocale=new Date(aujourdHui.getTime()-aujourdHui.getTimezoneOffset()*60000).toISOString().slice(0,10);
+debut.min=dateLocale;fin.min=dateLocale;
+function reserver(){
+const d=debut.value,f=fin.value;
+const msg=document.getElementById("message");
+if(!d||!f||f<d||d<dateLocale){
+msg.textContent="Veuillez choisir des dates valides.";
+return;
+}
+msg.textContent="";
+const nom=produits[Number(materiel.value)][0];
+const texte="Bonjour BAT LOCATION, je souhaite louer "+nom+
+" du "+d+" au "+f+". Pouvez-vous confirmer sa disponibilité ?";
+window.open("https://wa.me/?text="+encodeURIComponent(texte),"_blank");
+}
+</script>
 </body>
 </html>
