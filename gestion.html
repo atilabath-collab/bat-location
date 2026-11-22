@@ -1,539 +1,263 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#172b40">
-<title>BAT LOCATION - Location de matériel</title>
+<title>BAT LOCATION — Gestion privée des réservations</title>
 <style>
+:root{--navy:#172b40;--blue:#087ac0;--muted:#536477;--green:#176b35;--red:#a11919;--bg:#f3f6fa}
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#f3f6fa;color:#172b40}
-header{background:#172b40;color:white;text-align:center;padding:28px 15px}
-header h1{margin:0;font-size:32px}
-header p{margin-bottom:0}
-main{max-width:1000px;margin:auto;padding:22px}
-h2{text-align:center}
-.catalogue{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
-.produit{background:white;padding:20px;border-radius:14px;box-shadow:0 2px 10px #0001}
-.emoji{font-size:55px;text-align:center}
-.intro-catalogue{text-align:center;color:#536477;margin-bottom:22px}
-.outils-recherche{max-width:650px;margin:0 auto 24px}
-.outils-recherche label{font-weight:bold}
-#compteur{color:#536477;font-size:14px}
-.categorie{display:inline-block;color:#087ac0;font-size:13px;font-weight:bold;margin-top:8px}
-.description{color:#536477;font-size:14px;min-height:32px}
-#formules{margin:10px 0 20px;padding:12px;background:#f3f6fa;border-radius:9px}
-.produit{display:flex;flex-direction:column}
-.produit button{margin-top:auto}
-.produit[hidden]{display:none!important}
-.prix{font-size:22px;font-weight:bold;color:#087ac0}
-button{background:#087ac0;color:white;border:0;border-radius:9px;padding:12px 15px;cursor:pointer;font-weight:bold}
-button:hover{background:#075b91}
-button:disabled{opacity:.4;cursor:not-allowed}
-.reservation{margin-top:30px;background:white;padding:22px;border-radius:14px}
-label{display:block;margin:12px 0 5px}
-select,input{width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;font-size:16px}
-#message{color:#a11919;font-weight:bold}
-footer{text-align:center;padding:25px;color:#666}
-#calendrier-location{margin:20px 0;padding:15px;background:#f3f6fa;border-radius:12px}
-.navigation{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}
-.navigation strong{text-transform:capitalize;text-align:center}
-#calendrier{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
-.entete{text-align:center;font-weight:bold;padding:8px 0}
-.jour{min-width:0;padding:12px 2px;text-align:center;border-radius:7px;border:2px solid transparent;font-size:15px}
-.disponible{background:#c8f0d0;color:#176b35;cursor:pointer}
-.disponible:hover{background:#a4e6b4}
-.reserve{background:#f5c5c5;color:#a11919;cursor:not-allowed}
-.passe{background:#e6e6e6;color:#888;cursor:not-allowed}
-.selectionne{border-color:#087ac0;background:#a9d7f5}
-#statut{font-size:13px;color:#536477}
-#periode{font-weight:bold;color:#087ac0}
-@media(max-width:450px){
-main{padding:12px}
-.reservation{padding:14px}
-#calendrier-location{padding:10px}
-.jour{padding:10px 0;font-size:13px}
-.navigation button{padding:10px}
-}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--navy);background:var(--bg);line-height:1.45}
+header{background:var(--navy);color:#fff;padding:24px 16px;text-align:center}
+header h1{margin:0;font-size:28px}
+header p{margin:5px 0 0}
+main{max-width:780px;margin:22px auto;padding:0 14px}
+section{border-radius:13px;background:#fff;padding:22px;margin-bottom:18px;box-shadow:0 2px 10px #0000000d}
+h2{font-size:21px;margin:0 0 13px}
+label{display:block;font-weight:bold;margin:13px 0 5px}
+input,select{width:100%;min-height:44px;padding:11px 12px;font:inherit;border:1px solid #b8c5d1;border-radius:8px;color:var(--navy);background:#fff}
+button{border:0;border-radius:8px;background:var(--blue);color:#fff;font:inherit;font-weight:bold;padding:12px 16px;cursor:pointer;margin-top:13px}
+button:hover{filter:brightness(.92)}button:disabled{opacity:.48;cursor:wait}
+button.secondaire{background:#536477}button.danger{background:#b32626}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid label{margin-top:7px}
+#connexion-message,#gestion-message,#form-message{white-space:pre-wrap;overflow-wrap:anywhere}
+.erreur{color:var(--red);font-weight:bold}.succes{color:var(--green);font-weight:bold}
+.info{font-size:14px;color:var(--muted)}
+.notice{background:#f0f6fc;padding:12px;border-radius:8px;font-size:14px}
+.item{border:1px solid #dae1e8;border-radius:9px;padding:14px;margin:12px 0}
+.item strong{display:block}.item p{margin:6px 0 0;color:var(--muted)}
+.item button{margin-top:10px}
+.ligne{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+a{color:var(--blue)}
+[hidden]{display:none!important}
+@media(max-width:530px){section{padding:16px}.grid{grid-template-columns:1fr}header h1{font-size:24px}}
 </style>
 </head>
 <body>
-<header>
-<h1>BAT LOCATION</h1>
-<p>Location de matériel à Herblay-sur-Seine (95)</p>
-</header>
+<header><h1>BAT LOCATION HERBLAY</h1><p>Gestion privée des réservations — 31 matériels</p></header>
 <main>
-<h2>Notre matériel à louer</h2>
-<p class="intro-catalogue">31 références en location pour le bricolage, le nettoyage, le jardinage et les événements à Herblay-sur-Seine (95).</p>
-<div class="outils-recherche">
-<label for="recherche">Rechercher un matériel</label>
-<input id="recherche" type="search" placeholder="Ex. : plaque, scie, chaises, shampouineuse" autocomplete="off">
-<p id="compteur" aria-live="polite"></p>
-</div>
-<div class="catalogue" id="catalogue"></div>
-
-<section class="reservation" id="reservation">
-<h2>Demander une réservation</h2>
-<p>Choisissez votre matériel et vos dates. Aucun paiement ni réservation automatique : votre demande sera confirmée uniquement après notre accord.</p>
-
-<label for="materiel">Matériel</label>
-<select id="materiel"></select>
-
-<div id="formules" hidden>
-<label for="formule">Choisissez votre formule ou quantité</label>
-<select id="formule"></select>
-<p id="prix-formule" class="description"></p>
-</div>
-
-<div id="calendrier-location">
-<h3>Calendrier des disponibilités</h3>
-<p>🟢 Disponible | 🔴 Réservé | 🔵 Sélectionné | ⚪ Non vérifiable</p>
-<div class="navigation">
-<button type="button" id="precedent">◀</button>
-<strong id="mois-titre"></strong>
-<button type="button" id="suivant">▶</button>
-</div>
-<div id="calendrier"></div>
-<p id="periode">Sélectionnez une date de début, puis une date de fin.</p>
-<p id="statut">Chargement des disponibilités...</p>
-</div>
-
-<label for="debut">Date de début</label>
-<input type="date" id="debut">
-
-<label for="fin">Date de fin</label>
-<input type="date" id="fin">
-
-<p id="message" role="alert"></p>
-<button type="button" id="envoyer" onclick="reserver()" disabled>
-Envoyer la demande sur WhatsApp
-</button>
+<section id="connexion-section">
+  <h2>🔐 Connexion administrateur</h2>
+  <p>Connecte-toi avec <strong>l'adresse e-mail et le mot de passe</strong> du compte que tu as créé dans Supabase.</p>
+  <form id="connexion-form">
+    <label for="email">E-mail administrateur</label>
+    <input id="email" type="email" autocomplete="username" required>
+    <label for="motdepasse">Mot de passe</label>
+    <input id="motdepasse" type="password" autocomplete="current-password" required>
+    <button id="connexion-bouton" type="submit">Se connecter</button>
+  </form>
+  <p id="connexion-message" role="status"></p>
+  <p class="info">Cette page n'envoie jamais ton mot de passe à GitHub. La connexion passe par Supabase.</p>
 </section>
+<section id="gestion-entete" hidden>
+  <div class="ligne"><div><h2>Mes réservations confirmées</h2><p class="info" id="compte-connecte"></p></div><button id="deconnexion" class="secondaire" type="button">Se déconnecter</button></div>
+  <div class="notice">Les réservations enregistrées ici sont transmises à Supabase. Sur le calendrier client, les dates concernées apparaîtront en rouge à la prochaine actualisation.</div>
+</section>
+<section id="ajout-section" hidden>
+  <h2>➕ Ajouter une réservation confirmée</h2>
+  <form id="reservation-form">
+    <label for="materiel">Matériel loué</label>
+    <select id="materiel" required></select>
+    <div class="grid">
+      <div><label for="debut">Date de début</label><input id="debut" type="date" required></div>
+      <div><label for="fin">Date de fin (incluse)</label><input id="fin" type="date" required></div>
+    </div>
+    <button type="submit" id="ajout-bouton">Confirmer et bloquer les dates</button>
+  </form>
+  <p id="form-message" role="status"></p>
+</section>
+<section id="liste-section" hidden>
+  <div class="ligne"><h2>📅 Réservations enregistrées</h2><button class="secondaire" id="actualiser" type="button">Actualiser</button></div>
+  <label for="filtre">Afficher les réservations du matériel</label>
+  <select id="filtre"><option value="tous">Tous les matériels</option></select>
+  <p id="gestion-message" role="status"></p>
+  <div id="liste"></div>
+</section>
+<p class="info">Application client : <a href="https://atilabath-collab.github.io/bat-location/" target="_blank" rel="noopener">BAT LOCATION HERBLAY</a>. Les demandes WhatsApp ne sont pas enregistrées ici automatiquement : confirme-les toi-même avant d'ajouter une réservation.</p>
 </main>
-
-<footer>BAT LOCATION - Herblay-sur-Seine (95)</footer>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-const produits=[
-["Shampouineuse Kärcher Puzzi 8/1", 25, "🧼", "Nettoyage", "Injection-extraction • pastille incluse. Options : buse coins +5 €, suceur large +10 €, pastille supplémentaire +5 €.", []],
-["Plaque vibrante / dameuse", 35, "🧱", "Bricolage", "Compactage de sable, gravier et tout-venant. Deux plaques dans le parc matériel.", []],
-["Fendeuse à bois Scheppach 7 tonnes", 40, "🪵", "Jardinage", "Pour préparation des bûches • pied à prévoir lors de la réservation.", []],
-["Broyeur de végétaux Ryobi", 30, "🌿", "Jardinage", "Broyeur de branches et déchets verts, avec rallonge de 3 m.", []],
-["Taille-haie télescopique Makita", 25, "🌳", "Jardinage", "Sur batterie • 2 batteries et chargeur inclus.", []],
-["Nettoyeur haute pression Kärcher K2", 20, "💦", "Nettoyage", "K2 Full Control • prévoir un robinet de raccordement.", []],
-["Échelle multifonction 6-en-1", 15, "🪜", "Bricolage", "Échelle pliable pour travaux, peinture, entretien et rénovation.", []],
-["Brouette de jardin", 20, "🛞", "Jardinage", "Pour terre, gravats, bois et matériaux de jardin.", []],
-["Perceuse à percussion Black & Decker 650 W", 15, "🔩", "Bricolage", "Livrée avec coffrets de forets bois, métal et béton, et mallette.", []],
-["Ponceuse vibrante Black & Decker", 20, "🪚", "Bricolage", "Pour travaux de finition sur bois, meubles et petites surfaces.", []],
-["Caméra d’inspection 5 mètres", 20, "📷", "Bricolage", "Caméra endoscopique pour conduits et zones difficiles d’accès.", []],
-["Chiffres lumineux géants 76 cm", 20, "🎉", "Événementiel", "Chiffres de 0 à 9 • batterie et alimentation secteur • 2 télécommandes RGB.", [{"label": "1 chiffre", "prix": 20}, {"label": "2 chiffres", "prix": 35}]],
-["Perceuse-visseuse Bosch 18 V", 15, "🔧", "Bricolage", "Sans fil • vissage, montage, perçage et bricolage courant.", []],
-["Ponceuse girafe", 30, "🪚", "Bricolage", "Pour murs et plafonds • aspirateur eau/poussière en option (+10 €).", []],
-["Meuleuse d’angle DeWalt", 20, "⚙️", "Bricolage", "Découpe et ébarbage selon le disque et le matériau.", []],
-["Niveau laser Bosch + règle de maçon", 15, "📐", "Bricolage", "Pour alignement, pose et rénovation. Règle incluse.", []],
-["Ponceuse-polisseuse FAR TOOLS PMF 1300", 20, "🛠️", "Bricolage", "Pour ponçage, décapage et polissage • accessoires inclus.", []],
-["Scie sabre Bosch Professional", 20, "🪚", "Bricolage", "Pour couper bois, branches, PVC et autres matériaux adaptés.", []],
-["Marteau-piqueur / brise-béton 1700 W", 35, "🔨", "Bricolage", "Pour démolition, carrelage et burinage • 2 burins et mallette inclus.", []],
-["Détecteur thermique Bosch PTD 1", 20, "🌡️", "Bricolage", "Mesure des températures de surface et repérage des écarts thermiques.", []],
-["Sécateur électrique", 15, "✂️", "Jardinage", "Pour taille des branches, arbustes et végétaux.", []],
-["Souffleur-aspirateur-broyeur de feuilles", 15, "🍂", "Jardinage", "Pour feuilles et petits déchets végétaux.", []],
-["Aspirateur eau et poussière Kärcher WD2 Plus", 15, "🧹", "Nettoyage", "Nettoyage après travaux • peut accompagner une ponceuse girafe.", []],
-["Furet déboucheur de canalisation", 20, "🚰", "Nettoyage", "Pour évacuations et canalisations accessibles • disponibilité à confirmer.", []],
-["Chaises Napoléon blanches", 4, "🪑", "Événementiel", "Pliantes avec coussins • tarifs journée ou week-end selon quantité.", [{"label": "1 chaise", "prix": 4}, {"label": "Lot de 10 chaises", "prix": 35}, {"label": "Lot de 20 chaises", "prix": 70}, {"label": "Lot de 24 chaises", "prix": 84}]],
-["Table rectangulaire pliante 180 cm", 10, "🪑", "Événementiel", "Table blanche pour 6 à 8 personnes selon disposition.", [{"label": "1 table", "prix": 10}, {"label": "2 tables", "prix": 20}, {"label": "3 tables", "prix": 30}, {"label": "4 tables", "prix": 40}]],
-["Pack tables + chaises Napoléon", 24, "🎊", "Événementiel", "Tables rectangulaires blanches et chaises Napoléon avec coussins.", [{"label": "4 personnes : 1 table + 4 chaises", "prix": 24}, {"label": "6 personnes : 1 table + 6 chaises", "prix": 30}, {"label": "12 personnes : 2 tables + 12 chaises", "prix": 58}, {"label": "18 personnes : 3 tables + 18 chaises", "prix": 85}, {"label": "20 personnes : 4 tables + 20 chaises", "prix": 95}, {"label": "24 personnes : 4 tables + 24 chaises", "prix": 110}]],
-["Distributeur de boissons fraîches Bartscher", 25, "🥤", "Événementiel", "Distributeur électrique pour fête, anniversaire et réception.", []],
-["Décoration d’anniversaire complète", 95, "🎂", "Événementiel", "Panneaux fleuris, éclairage et décoration lumineuse ; installation et livraison en supplément.", [{"label": "Pack Essentiel : panneaux, fleurs, colonnes, enseigne", "prix": 95}, {"label": "Pack Complet : Essentiel + 2 chiffres géants", "prix": 120}, {"label": "Pack Premium : Complet + tapis rouge", "prix": 135}]],
-["Akai MPC One", 35, "🎵", "Événementiel", "Station musicale pour beatmaking, sampling et production.", []],
-["Porte-vélos Atera 4 vélos", 25, "🚲", "Loisirs et transport", "Porte-vélos pour transporter jusqu’à quatre vélos.", []]
-];
-
-// Clé publique Supabase : les modifications sont protégées par RLS.
+"use strict";
 const SUPABASE_URL="https://ohndzqyttbpgrgvnfpgn.supabase.co";
 const SUPABASE_PUBLIC_KEY="sb_publishable_AewdKiEcFtXG1igghef9qQ_lFziTiw8";
-let reservations={};
-let disponibilitesChargees=false;
+const ADMIN_UID="b52241e9-3df0-4ffb-8aff-ed2ef593d40d";
+// Conserver exactement le même ordre que les 31 références dans index.html.
+const PRODUITS=[
+"Shampouineuse Kärcher Puzzi 8/1",
+"Plaque vibrante / dameuse",
+"Fendeuse à bois Scheppach 7 tonnes",
+"Broyeur de végétaux Ryobi",
+"Taille-haie télescopique Makita",
+"Nettoyeur haute pression Kärcher K2",
+"Échelle multifonction 6-en-1",
+"Brouette de jardin",
+"Perceuse à percussion Black & Decker 650 W",
+"Ponceuse vibrante Black & Decker",
+"Caméra d’inspection 5 mètres",
+"Chiffres lumineux géants 76 cm",
+"Perceuse-visseuse Bosch 18 V",
+"Ponceuse girafe",
+"Meuleuse d’angle DeWalt",
+"Niveau laser Bosch + règle de maçon",
+"Ponceuse-polisseuse FAR TOOLS PMF 1300",
+"Scie sabre Bosch Professional",
+"Marteau-piqueur / brise-béton 1700 W",
+"Détecteur thermique Bosch PTD 1",
+"Sécateur électrique",
+"Souffleur-aspirateur-broyeur de feuilles",
+"Aspirateur eau et poussière Kärcher WD2 Plus",
+"Furet déboucheur de canalisation",
+"Chaises Napoléon blanches",
+"Table rectangulaire pliante 180 cm",
+"Pack tables + chaises Napoléon",
+"Distributeur de boissons fraîches Bartscher",
+"Décoration d’anniversaire complète",
+"Akai MPC One",
+"Porte-vélos Atera 4 vélos"
+];
+const el=id=>document.getElementById(id);
+const materiel=el("materiel");
+const filtre=el("filtre");
+let client=null;
+let donnees=[];
+let connecte=false;
+let enCours=false;
 
-const catalogue=document.getElementById("catalogue");
-const materiel=document.getElementById("materiel");
-const debut=document.getElementById("debut");
-const formules=document.getElementById("formules");
-const formule=document.getElementById("formule");
-const prixFormule=document.getElementById("prix-formule");
-const fin=document.getElementById("fin");
-const message=document.getElementById("message");
-const calendrier=document.getElementById("calendrier");
-const statut=document.getElementById("statut");
-const envoyer=document.getElementById("envoyer");
-
-function dateAujourdhui(){
-const d=new Date();
-return [
-d.getFullYear(),
-String(d.getMonth()+1).padStart(2,"0"),
-String(d.getDate()).padStart(2,"0")
-].join("-");
-}
-
-const maintenant=new Date();
-const dateLocale=dateAujourdhui();
-let moisAffiche=maintenant.getMonth();
-let anneeAffiche=maintenant.getFullYear();
-
-debut.min=dateLocale;
-fin.min=dateLocale;
-
-produits.forEach((p,i)=>{
-const article=document.createElement("article");
-article.className="produit";
-article.dataset.recherche=(p[0]+" "+p[3]+" "+p[4]).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-
-const emoji=document.createElement("div");
-emoji.className="emoji";
-emoji.textContent=p[2];
-
-const nom=document.createElement("h3");
-nom.textContent=p[0];
-
-const prix=document.createElement("p");
-prix.className="prix";
-prix.textContent=p[0]==="Chaises Napoléon blanches"?"À partir de "+p[1]+" € / journée ou week-end":"À partir de "+p[1]+" € / 24 h";
-
-const categorie=document.createElement("span");
-categorie.className="categorie";
-categorie.textContent=p[3];
-
-const description=document.createElement("p");
-description.className="description";
-description.textContent=p[4];
-
-const bouton=document.createElement("button");
-bouton.textContent="Demander une réservation";
-bouton.onclick=()=>{
-materiel.value=String(i);
-reinitialiserDates();
-mettreAJourFormules();
-afficherCalendrier();
-document.getElementById("reservation").scrollIntoView({behavior:"smooth"});
-};
-
-article.append(emoji,categorie,nom,description,prix,bouton);
-catalogue.appendChild(article);
-
-const option=document.createElement("option");
-option.value=String(i);
-option.textContent=p[0];
-materiel.appendChild(option);
+PRODUITS.forEach((nom,i)=>{
+ const opt=document.createElement("option");opt.value=String(i);opt.textContent=nom;materiel.append(opt);
+ const opt2=document.createElement("option");opt2.value=String(i);opt2.textContent=nom;filtre.append(opt2);
 });
-
-// Les formules de packs et les quantités font partie d'une seule référence.
-function mettreAJourFormules(){
- const p=produits[Number(materiel.value)];
- const options=p[5]||[];
- formule.replaceChildren();
- formules.hidden=options.length===0;
- if(!options.length){prixFormule.textContent="";return;}
- options.forEach((opt,i)=>{
-  const el=document.createElement("option");
-  el.value=String(i);
-  el.textContent=opt.label+" — "+opt.prix+" €";
-  formule.appendChild(el);
- });
- afficherPrixFormule();
+function dateLocale(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");}
+function afficherStatut(id,texte,type=""){el(id).textContent=texte;el(id).className=type;}
+function changerInterface(estConnecte,email=""){
+ connecte=estConnecte;
+ el("connexion-section").hidden=estConnecte;
+ ["gestion-entete","ajout-section","liste-section"].forEach(id=>el(id).hidden=!estConnecte);
+ el("compte-connecte").textContent=email?"Connecté : "+email:"Compte administrateur";
 }
-function afficherPrixFormule(){
- const p=produits[Number(materiel.value)];
- const opt=(p[5]||[])[Number(formule.value)||0];
- prixFormule.textContent=opt?"Tarif indiqué : "+opt.prix+" € (hors livraison et options).":"";
+function erreurLisible(error){
+ const msg=(error&&error.message)?error.message:String(error);
+ if(/invalid login credentials/i.test(msg))return "E-mail ou mot de passe incorrect.";
+ if(/email not confirmed/i.test(msg))return "E-mail non confirmé dans Supabase.";
+ if(/permission denied|row-level security|42501/i.test(msg))return "Accès refusé par les autorisations Supabase. "+msg;
+ return msg;
 }
-formule.addEventListener("change",afficherPrixFormule);
-mettreAJourFormules();
-
-// Filtre simple pour retrouver rapidement l'un des matériels.
-const recherche=document.getElementById("recherche");
-function filtrerCatalogue(){
- const valeur=recherche.value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
- let nombre=0;
- catalogue.querySelectorAll(".produit").forEach(carte=>{
-  const afficher=carte.dataset.recherche.includes(valeur);
-  carte.hidden=!afficher;
-  if(afficher)nombre++;
- });
- document.getElementById("compteur").textContent=nombre+" matériel"+(nombre>1?"s":"")+" affiché"+(nombre>1?"s":"")+" sur "+produits.length;
-}
-recherche.addEventListener("input",filtrerCatalogue);
-filtrerCatalogue();
-
-async function chargerReservations(){
- disponibilitesChargees=false;
- envoyer.disabled=true;
- statut.textContent="Chargement des disponibilités...";
-
- try{
-  const nouvellesReservations={};
-  let offset=0;
-  const taillePage=1000;
-  while(true){
-   const url=SUPABASE_URL+"/rest/v1/reservations?select=materiel_id,date_debut,date_fin&order=id.asc&limit="+taillePage+"&offset="+offset;
-   const reponse=await fetch(url,{
-    method:"GET",
-    cache:"no-store",
-    headers:{
-     "apikey":SUPABASE_PUBLIC_KEY,
-     "Accept":"application/json"
-    }
-   });
-   if(!reponse.ok)throw new Error("Erreur Supabase : "+reponse.status);
-   const lignes=await reponse.json();
-   if(!Array.isArray(lignes))throw new Error("Réponse inattendue");
-   for(const ligne of lignes){
-    const id=ligne.materiel_id;
-    const d=ligne.date_debut;
-    const f=ligne.date_fin;
-    if(!Number.isInteger(id)||id<0||id>=produits.length||
-       typeof d!=="string"||typeof f!=="string"||
-       !/^\d{4}-\d{2}-\d{2}$/.test(d)||
-       !/^\d{4}-\d{2}-\d{2}$/.test(f)||f<d){
-     throw new Error("Données de réservation incorrectes");
-    }
-    if(!nouvellesReservations[id])nouvellesReservations[id]=[];
-    nouvellesReservations[id].push([d,f]);
-   }
-   if(lignes.length<taillePage)break;
-   offset+=taillePage;
-  }
-  reservations=nouvellesReservations;
-  disponibilitesChargees=true;
-  envoyer.disabled=false;
-  statut.textContent="Disponibilités consultées. Une réservation n’est confirmée qu’après accord de BAT LOCATION.";
-  envoyer.textContent="Envoyer la demande sur WhatsApp";
-  if(debut.value&&fin.value&&periodeReservee(debut.value,fin.value)){
-   message.textContent="La période choisie n'est plus disponible.";
-  }
- }catch(erreur){
-  console.error("Chargement des réservations :",erreur);
-  reservations={};
-  disponibilitesChargees=false;
-  // Mode dégradé : calendrier grisé, demandes WhatsApp possibles sans afficher de fausses disponibilités.
-  envoyer.disabled=false;
-  envoyer.textContent="Demander confirmation sur WhatsApp";
-  statut.textContent="Calendrier temporairement indisponible : aucune date n'est vérifiée. Saisissez vos dates ci-dessous et demandez confirmation sur WhatsApp.";
-  message.textContent="";
+async function preparer(){
+ if(!window.supabase || typeof window.supabase.createClient!=="function"){
+  afficherStatut("connexion-message","Connexion indisponible : impossible de charger le module Supabase. Vérifie la connexion Internet et recharge la page.","erreur");return;
  }
- afficherCalendrier();
+ client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLIC_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+ try{
+  const {data,error}=await client.auth.getUser();
+  if(error && !/auth session missing/i.test(error.message||""))throw error;
+  if(data?.user){
+   if(data.user.id===ADMIN_UID){changerInterface(true,data.user.email);await chargerReservations();}
+   else{await client.auth.signOut();afficherStatut("connexion-message","Ce compte n'est pas l'administrateur BAT LOCATION.","erreur");}
+  }
+ }catch(err){afficherStatut("connexion-message","Impossible de vérifier la connexion : "+erreurLisible(err),"erreur");}
 }
-
-function dateReservee(date){
-const plages=reservations[materiel.value]||[];
-return plages.some(plage=>date>=plage[0]&&date<=plage[1]);
-}
-
-function periodeReservee(d,f){
-const jour=new Date(d+"T12:00:00");
-const dernier=new Date(f+"T12:00:00");
-
-while(jour<=dernier){
-const date=[
-jour.getFullYear(),
-String(jour.getMonth()+1).padStart(2,"0"),
-String(jour.getDate()).padStart(2,"0")
-].join("-");
-
-if(dateReservee(date))return true;
-jour.setDate(jour.getDate()+1);
-}
-return false;
-}
-
-function reinitialiserDates(){
-debut.value="";
-fin.value="";
-message.textContent="";
-document.getElementById("periode").textContent=
-"Sélectionnez une date de début, puis une date de fin.";
-}
-
-function changerMois(direction){
-const nouveau=new Date(anneeAffiche,moisAffiche+direction,1);
-moisAffiche=nouveau.getMonth();
-anneeAffiche=nouveau.getFullYear();
-afficherCalendrier();
-}
-
-document.getElementById("precedent").onclick=()=>changerMois(-1);
-document.getElementById("suivant").onclick=()=>changerMois(1);
-
-function choisirDate(date){
-if(!disponibilitesChargees)return;
-
-message.textContent="";
-
-if(!debut.value||fin.value||date<debut.value){
-debut.value=date;
-fin.value="";
-}else{
-if(periodeReservee(debut.value,date)){
-message.textContent=
-"Cette période comprend une date déjà réservée.";
-return;
-}
-fin.value=date;
-}
-
-mettreAJourPeriode();
-afficherCalendrier();
-}
-
-function mettreAJourPeriode(){
-const zone=document.getElementById("periode");
-
-if(debut.value&&fin.value){
-zone.textContent="Du "+debut.value+" au "+fin.value;
-}else if(debut.value){
-zone.textContent="Début : "+debut.value+" — choisissez la fin.";
-}else{
-zone.textContent=
-"Sélectionnez une date de début, puis une date de fin.";
-}
-}
-
-function afficherCalendrier(){
-calendrier.innerHTML="";
-
-document.getElementById("mois-titre").textContent=
-new Date(anneeAffiche,moisAffiche,1).toLocaleDateString("fr-FR",{
-month:"long",year:"numeric"
+el("connexion-form").addEventListener("submit",async event=>{
+ event.preventDefault();if(!client)return;
+ const bouton=el("connexion-bouton");bouton.disabled=true;
+ afficherStatut("connexion-message","Connexion en cours...");
+ try{
+  const email=el("email").value.trim();
+  const {data,error}=await client.auth.signInWithPassword({email,password:el("motdepasse").value});
+  if(error)throw error;
+  if(data.user?.id!==ADMIN_UID){await client.auth.signOut();throw new Error("Ce compte n'est pas autorisé à gérer BAT LOCATION.");}
+  el("motdepasse").value="";
+  changerInterface(true,data.user.email);
+  await chargerReservations();
+ }catch(err){afficherStatut("connexion-message",erreurLisible(err),"erreur");}
+ finally{bouton.disabled=false;}
 });
-
-const moisActuel=new Date(
-maintenant.getFullYear(),maintenant.getMonth(),1
-);
-
-document.getElementById("precedent").disabled=
-new Date(anneeAffiche,moisAffiche,1)<=moisActuel;
-
-["L","M","M","J","V","S","D"].forEach(j=>{
-const titre=document.createElement("div");
-titre.className="entete";
-titre.textContent=j;
-calendrier.appendChild(titre);
+el("deconnexion").addEventListener("click",async()=>{
+ if(!client)return;
+ const {error}=await client.auth.signOut();
+ if(error){afficherStatut("gestion-message",erreurLisible(error),"erreur");return;}
+ donnees=[];changerInterface(false);afficherStatut("connexion-message","Déconnecté.","succes");
 });
-
-const decalage=
-(new Date(anneeAffiche,moisAffiche,1).getDay()+6)%7;
-
-for(let i=0;i<decalage;i++){
-calendrier.appendChild(document.createElement("div"));
+async function obtenirReservations(){
+ const {data,error}=await client.from("reservations")
+  .select("id,materiel_id,date_debut,date_fin")
+  .order("date_debut",{ascending:true}).limit(1000);
+ if(error)throw error;
+ if(!Array.isArray(data))throw new Error("Réponse de la base de données incorrecte.");
+ return data;
 }
-
-const nombreJours=
-new Date(anneeAffiche,moisAffiche+1,0).getDate();
-
-for(let jour=1;jour<=nombreJours;jour++){
-const date=[
-anneeAffiche,
-String(moisAffiche+1).padStart(2,"0"),
-String(jour).padStart(2,"0")
-].join("-");
-
-const caseJour=document.createElement("button");
-caseJour.type="button";
-caseJour.className="jour";
-caseJour.textContent=jour;
-
-if(date<dateAujourdhui()){
-caseJour.classList.add("passe");
-caseJour.disabled=true;
-}else if(!disponibilitesChargees){
-caseJour.classList.add("passe");
-caseJour.disabled=true;
-}else if(dateReservee(date)){
-caseJour.classList.add("reserve");
-caseJour.disabled=true;
-}else{
-caseJour.classList.add("disponible");
-caseJour.onclick=()=>choisirDate(date);
+async function chargerReservations(){
+ if(!connecte||!client)return;
+ afficherStatut("gestion-message","Chargement des réservations...");
+ el("actualiser").disabled=true;
+ try{
+  donnees=await obtenirReservations();
+  afficherStatut("gestion-message",donnees.length+" réservation(s) chargée(s)."+(donnees.length===1000?" Attention : limite de 1 000 lignes atteinte.":""),"succes");
+  afficherListe();
+ }catch(err){
+  // Ne pas afficher une liste vide en cas d'échec de lecture.
+  afficherStatut("gestion-message","Impossible de charger les réservations : "+erreurLisible(err),"erreur");
+  el("liste").replaceChildren();
+ }finally{el("actualiser").disabled=false;}
 }
-
-if(
-date===debut.value||
-date===fin.value||
-(debut.value&&fin.value&&date>debut.value&&date<fin.value)
-){
-caseJour.classList.add("selectionne");
+function afficherListe(){
+ const liste=el("liste");liste.replaceChildren();
+ const valeur=filtre.value;
+ const lignes=donnees.filter(r=>valeur==="tous"||String(r.materiel_id)===valeur);
+ if(!lignes.length){liste.textContent="Aucune réservation confirmée pour ce choix.";return;}
+ lignes.forEach(r=>{
+  const bloc=document.createElement("article");bloc.className="item";
+  const nom=document.createElement("strong");nom.textContent=PRODUITS[r.materiel_id]||("Matériel n°"+r.materiel_id);
+  const dates=document.createElement("p");dates.textContent="Du "+r.date_debut+" au "+r.date_fin+" (inclus)";
+  const bouton=document.createElement("button");bouton.type="button";bouton.className="danger";
+  bouton.textContent="Annuler cette réservation";
+  bouton.onclick=()=>supprimerReservation(r);
+  bloc.append(nom,dates,bouton);liste.append(bloc);
+ });
 }
-
-calendrier.appendChild(caseJour);
-}
-}
-
-function verifierDates(){
-const d=debut.value;
-const f=fin.value;
-
-if(!d||!f||d<dateAujourdhui()||f<d){
-message.textContent="Veuillez choisir des dates valides.";
-return false;
-}
-
-if(disponibilitesChargees && periodeReservee(d,f)){
-message.textContent=
-"Ce matériel est déjà réservé sur une partie de cette période.";
-return false;
-}
-
-message.textContent=disponibilitesChargees?"":"Disponibilité non vérifiée automatiquement : seule notre confirmation est valable.";
-return true;
-}
-
-async function reserver(){
-if(!verifierDates())return;
-
-envoyer.disabled=true;
-await chargerReservations();
-
-if(!verifierDates()){
-envoyer.disabled=!disponibilitesChargees;
-return;
-}
-
-const p=produits[Number(materiel.value)];
-const choix=(p[5]||[])[Number(formule.value)||0];
-const info=choix?" ("+choix.label+", "+choix.prix+" €)":" ("+p[1]+" € / 24 h)";
-const texte=
-"Bonjour BAT LOCATION, je souhaite louer "+p[0]+info+
-" du "+debut.value+" au "+fin.value+
-". Pouvez-vous confirmer la disponibilité et le tarif total ?";
-
-const lien="https://wa.me/33616225718?text="+encodeURIComponent(texte);
-envoyer.disabled=false;
-window.location.href=lien;
-}
-
-materiel.addEventListener("change",()=>{
-mettreAJourFormules();
-reinitialiserDates();
-afficherCalendrier();
+function chevauche(a,b){return a.date_debut<=b.date_fin&&a.date_fin>=b.date_debut;}
+el("reservation-form").addEventListener("submit",async event=>{
+ event.preventDefault();if(!connecte||!client||enCours)return;
+ const d=el("debut").value,f=el("fin").value,id=Number(materiel.value);
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||!/^\d{4}-\d{2}-\d{2}$/.test(f)||f<d||d<dateLocale()||!Number.isInteger(id)||id<0||id>=PRODUITS.length){
+  afficherStatut("form-message","Choisis un matériel et des dates valides à partir d'aujourd'hui.","erreur");return;
+ }
+ if(!confirm("Confirmer la réservation de « "+PRODUITS[id]+" » du "+d+" au "+f+" ?"))return;
+ enCours=true;el("ajout-bouton").disabled=true;
+ afficherStatut("form-message","Vérification des disponibilités...");
+ try{
+  // Dernière lecture pour réduire le risque de double réservation.
+  const nouvelles=await obtenirReservations();
+  const essai={date_debut:d,date_fin:f};
+  if(nouvelles.some(r=>r.materiel_id===id&&chevauche(essai,r))){
+   throw new Error("Ce matériel est déjà réservé sur une partie de cette période.");
+  }
+  const {error}=await client.from("reservations").insert({materiel_id:id,date_debut:d,date_fin:f});
+  if(error)throw error;
+  afficherStatut("form-message","Réservation confirmée et enregistrée dans Supabase. Les dates seront rouges sur le calendrier client après actualisation.","succes");
+  el("debut").value="";el("fin").value="";
+  await chargerReservations();
+ }catch(err){afficherStatut("form-message","Réservation non ajoutée : "+erreurLisible(err),"erreur");}
+ finally{enCours=false;el("ajout-bouton").disabled=false;}
 });
-
-debut.addEventListener("change",()=>{
-fin.value="";
-mettreAJourPeriode();
-afficherCalendrier();
-});
-
-fin.addEventListener("change",()=>{
-mettreAJourPeriode();
-afficherCalendrier();
-});
-
-afficherCalendrier();
-chargerReservations();
-// Rafraîchir les disponibilités au retour sur l'onglet.
-document.addEventListener("visibilitychange",()=>{
- if(!document.hidden)chargerReservations();
-});
+async function supprimerReservation(r){
+ if(!connecte||!client||enCours)return;
+ const nom=PRODUITS[r.materiel_id]||("Matériel n°"+r.materiel_id);
+ if(!confirm("Annuler la réservation « "+nom+" » du "+r.date_debut+" au "+r.date_fin+" ?"))return;
+ enCours=true;afficherStatut("gestion-message","Annulation en cours...");
+ try{
+  const {error}=await client.from("reservations").delete().eq("id",r.id);
+  if(error)throw error;
+  await chargerReservations();
+  afficherStatut("gestion-message","Réservation annulée. La date redeviendra disponible sur le calendrier client à l'actualisation.","succes");
+ }catch(err){afficherStatut("gestion-message","Impossible d'annuler la réservation : "+erreurLisible(err),"erreur");}
+ finally{enCours=false;}
+}
+el("actualiser").addEventListener("click",chargerReservations);
+filtre.addEventListener("change",afficherListe);
+el("debut").min=dateLocale();el("fin").min=dateLocale();
+preparer();
 </script>
 </body>
 </html>
