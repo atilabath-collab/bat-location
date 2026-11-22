@@ -17,6 +17,16 @@ h2{text-align:center}
 .catalogue{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
 .produit{background:white;padding:20px;border-radius:14px;box-shadow:0 2px 10px #0001}
 .emoji{font-size:55px;text-align:center}
+.intro-catalogue{text-align:center;color:#536477;margin-bottom:22px}
+.outils-recherche{max-width:650px;margin:0 auto 24px}
+.outils-recherche label{font-weight:bold}
+#compteur{color:#536477;font-size:14px}
+.categorie{display:inline-block;color:#087ac0;font-size:13px;font-weight:bold;margin-top:8px}
+.description{color:#536477;font-size:14px;min-height:32px}
+#formules{margin:10px 0 20px;padding:12px;background:#f3f6fa;border-radius:9px}
+.produit{display:flex;flex-direction:column}
+.produit button{margin-top:auto}
+.produit[hidden]{display:none!important}
 .prix{font-size:22px;font-weight:bold;color:#087ac0}
 button{background:#087ac0;color:white;border:0;border-radius:9px;padding:12px 15px;cursor:pointer;font-weight:bold}
 button:hover{background:#075b91}
@@ -55,18 +65,30 @@ main{padding:12px}
 </header>
 <main>
 <h2>Notre matériel à louer</h2>
+<p class="intro-catalogue">31 références en location pour le bricolage, le nettoyage, le jardinage et les événements à Herblay-sur-Seine (95).</p>
+<div class="outils-recherche">
+<label for="recherche">Rechercher un matériel</label>
+<input id="recherche" type="search" placeholder="Ex. : plaque, scie, chaises, shampouineuse" autocomplete="off">
+<p id="compteur" aria-live="polite"></p>
+</div>
 <div class="catalogue" id="catalogue"></div>
 
 <section class="reservation" id="reservation">
 <h2>Demander une réservation</h2>
-<p>Choisissez votre matériel et vos dates. Votre demande sera confirmée uniquement après notre accord.</p>
+<p>Choisissez votre matériel et vos dates. Aucun paiement ni réservation automatique : votre demande sera confirmée uniquement après notre accord.</p>
 
 <label for="materiel">Matériel</label>
 <select id="materiel"></select>
 
+<div id="formules" hidden>
+<label for="formule">Choisissez votre formule ou quantité</label>
+<select id="formule"></select>
+<p id="prix-formule" class="description"></p>
+</div>
+
 <div id="calendrier-location">
 <h3>Calendrier des disponibilités</h3>
-<p>🟢 Disponible | 🔴 Réservé | 🔵 Sélectionné</p>
+<p>🟢 Disponible | 🔴 Réservé | 🔵 Sélectionné | ⚪ Non vérifiable</p>
 <div class="navigation">
 <button type="button" id="precedent">◀</button>
 <strong id="mois-titre"></strong>
@@ -94,18 +116,37 @@ Envoyer la demande sur WhatsApp
 
 <script>
 const produits=[
-["Shampouineuse Kärcher Puzzi 8/1",25,"🧼"],
-["Plaque vibrante",35,"🔨"],
-["Fendeuse de bûches 7T",40,"🪵"],
-["Broyeur de végétaux",30,"🌿"],
-["Taille-haie Makita",25,"🌳"],
-["Nettoyeur haute pression K2",20,"💦"],
-["Échelle multifonction",15,"🪜"],
-["Brouette 100 L",20,"🛠️"],
-["Perforateur DeWalt",45,"🔧"],
-["Ponceuse vibrante",15,"🪚"],
-["Caméra endoscopique",15,"📷"],
-["Chiffres lumineux LED",20,"🎉"]
+["Shampouineuse Kärcher Puzzi 8/1", 25, "🧼", "Nettoyage", "Injection-extraction • pastille incluse. Options : buse coins +5 €, suceur large +10 €, pastille supplémentaire +5 €.", []],
+["Plaque vibrante / dameuse", 35, "🧱", "Bricolage", "Compactage de sable, gravier et tout-venant. Deux plaques dans le parc matériel.", []],
+["Fendeuse à bois Scheppach 7 tonnes", 40, "🪵", "Jardinage", "Pour préparation des bûches • pied à prévoir lors de la réservation.", []],
+["Broyeur de végétaux Ryobi", 30, "🌿", "Jardinage", "Broyeur de branches et déchets verts, avec rallonge de 3 m.", []],
+["Taille-haie télescopique Makita", 25, "🌳", "Jardinage", "Sur batterie • 2 batteries et chargeur inclus.", []],
+["Nettoyeur haute pression Kärcher K2", 20, "💦", "Nettoyage", "K2 Full Control • prévoir un robinet de raccordement.", []],
+["Échelle multifonction 6-en-1", 15, "🪜", "Bricolage", "Échelle pliable pour travaux, peinture, entretien et rénovation.", []],
+["Brouette de jardin", 20, "🛞", "Jardinage", "Pour terre, gravats, bois et matériaux de jardin.", []],
+["Perceuse à percussion Black & Decker 650 W", 15, "🔩", "Bricolage", "Livrée avec coffrets de forets bois, métal et béton, et mallette.", []],
+["Ponceuse vibrante Black & Decker", 20, "🪚", "Bricolage", "Pour travaux de finition sur bois, meubles et petites surfaces.", []],
+["Caméra d’inspection 5 mètres", 20, "📷", "Bricolage", "Caméra endoscopique pour conduits et zones difficiles d’accès.", []],
+["Chiffres lumineux géants 76 cm", 20, "🎉", "Événementiel", "Chiffres de 0 à 9 • batterie et alimentation secteur • 2 télécommandes RGB.", [{"label": "1 chiffre", "prix": 20}, {"label": "2 chiffres", "prix": 35}]],
+["Perceuse-visseuse Bosch 18 V", 15, "🔧", "Bricolage", "Sans fil • vissage, montage, perçage et bricolage courant.", []],
+["Ponceuse girafe", 30, "🪚", "Bricolage", "Pour murs et plafonds • aspirateur eau/poussière en option (+10 €).", []],
+["Meuleuse d’angle DeWalt", 20, "⚙️", "Bricolage", "Découpe et ébarbage selon le disque et le matériau.", []],
+["Niveau laser Bosch + règle de maçon", 15, "📐", "Bricolage", "Pour alignement, pose et rénovation. Règle incluse.", []],
+["Ponceuse-polisseuse FAR TOOLS PMF 1300", 20, "🛠️", "Bricolage", "Pour ponçage, décapage et polissage • accessoires inclus.", []],
+["Scie sabre Bosch Professional", 20, "🪚", "Bricolage", "Pour couper bois, branches, PVC et autres matériaux adaptés.", []],
+["Marteau-piqueur / brise-béton 1700 W", 35, "🔨", "Bricolage", "Pour démolition, carrelage et burinage • 2 burins et mallette inclus.", []],
+["Détecteur thermique Bosch PTD 1", 20, "🌡️", "Bricolage", "Mesure des températures de surface et repérage des écarts thermiques.", []],
+["Sécateur électrique", 15, "✂️", "Jardinage", "Pour taille des branches, arbustes et végétaux.", []],
+["Souffleur-aspirateur-broyeur de feuilles", 15, "🍂", "Jardinage", "Pour feuilles et petits déchets végétaux.", []],
+["Aspirateur eau et poussière Kärcher WD2 Plus", 15, "🧹", "Nettoyage", "Nettoyage après travaux • peut accompagner une ponceuse girafe.", []],
+["Furet déboucheur de canalisation", 20, "🚰", "Nettoyage", "Pour évacuations et canalisations accessibles • disponibilité à confirmer.", []],
+["Chaises Napoléon blanches", 4, "🪑", "Événementiel", "Pliantes avec coussins • tarifs journée ou week-end selon quantité.", [{"label": "1 chaise", "prix": 4}, {"label": "Lot de 10 chaises", "prix": 35}, {"label": "Lot de 20 chaises", "prix": 70}, {"label": "Lot de 24 chaises", "prix": 84}]],
+["Table rectangulaire pliante 180 cm", 10, "🪑", "Événementiel", "Table blanche pour 6 à 8 personnes selon disposition.", [{"label": "1 table", "prix": 10}, {"label": "2 tables", "prix": 20}, {"label": "3 tables", "prix": 30}, {"label": "4 tables", "prix": 40}]],
+["Pack tables + chaises Napoléon", 24, "🎊", "Événementiel", "Tables rectangulaires blanches et chaises Napoléon avec coussins.", [{"label": "4 personnes : 1 table + 4 chaises", "prix": 24}, {"label": "6 personnes : 1 table + 6 chaises", "prix": 30}, {"label": "12 personnes : 2 tables + 12 chaises", "prix": 58}, {"label": "18 personnes : 3 tables + 18 chaises", "prix": 85}, {"label": "20 personnes : 4 tables + 20 chaises", "prix": 95}, {"label": "24 personnes : 4 tables + 24 chaises", "prix": 110}]],
+["Distributeur de boissons fraîches Bartscher", 25, "🥤", "Événementiel", "Distributeur électrique pour fête, anniversaire et réception.", []],
+["Décoration d’anniversaire complète", 95, "🎂", "Événementiel", "Panneaux fleuris, éclairage et décoration lumineuse ; installation et livraison en supplément.", [{"label": "Pack Essentiel : panneaux, fleurs, colonnes, enseigne", "prix": 95}, {"label": "Pack Complet : Essentiel + 2 chiffres géants", "prix": 120}, {"label": "Pack Premium : Complet + tapis rouge", "prix": 135}]],
+["Akai MPC One", 35, "🎵", "Événementiel", "Station musicale pour beatmaking, sampling et production.", []],
+["Porte-vélos Atera 4 vélos", 25, "🚲", "Loisirs et transport", "Porte-vélos pour transporter jusqu’à quatre vélos.", []]
 ];
 
 // Clé publique Supabase : les modifications sont protégées par RLS.
@@ -117,6 +158,9 @@ let disponibilitesChargees=false;
 const catalogue=document.getElementById("catalogue");
 const materiel=document.getElementById("materiel");
 const debut=document.getElementById("debut");
+const formules=document.getElementById("formules");
+const formule=document.getElementById("formule");
+const prixFormule=document.getElementById("prix-formule");
 const fin=document.getElementById("fin");
 const message=document.getElementById("message");
 const calendrier=document.getElementById("calendrier");
@@ -143,6 +187,7 @@ fin.min=dateLocale;
 produits.forEach((p,i)=>{
 const article=document.createElement("article");
 article.className="produit";
+article.dataset.recherche=(p[0]+" "+p[3]+" "+p[4]).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 
 const emoji=document.createElement("div");
 emoji.className="emoji";
@@ -153,18 +198,27 @@ nom.textContent=p[0];
 
 const prix=document.createElement("p");
 prix.className="prix";
-prix.textContent="À partir de "+p[1]+" € / 24 h";
+prix.textContent=p[0]==="Chaises Napoléon blanches"?"À partir de "+p[1]+" € / journée ou week-end":"À partir de "+p[1]+" € / 24 h";
+
+const categorie=document.createElement("span");
+categorie.className="categorie";
+categorie.textContent=p[3];
+
+const description=document.createElement("p");
+description.className="description";
+description.textContent=p[4];
 
 const bouton=document.createElement("button");
 bouton.textContent="Demander une réservation";
 bouton.onclick=()=>{
 materiel.value=String(i);
 reinitialiserDates();
+mettreAJourFormules();
 afficherCalendrier();
 document.getElementById("reservation").scrollIntoView({behavior:"smooth"});
 };
 
-article.append(emoji,nom,prix,bouton);
+article.append(emoji,categorie,nom,description,prix,bouton);
 catalogue.appendChild(article);
 
 const option=document.createElement("option");
@@ -172,6 +226,44 @@ option.value=String(i);
 option.textContent=p[0];
 materiel.appendChild(option);
 });
+
+// Les formules de packs et les quantités font partie d'une seule référence.
+function mettreAJourFormules(){
+ const p=produits[Number(materiel.value)];
+ const options=p[5]||[];
+ formule.replaceChildren();
+ formules.hidden=options.length===0;
+ if(!options.length){prixFormule.textContent="";return;}
+ options.forEach((opt,i)=>{
+  const el=document.createElement("option");
+  el.value=String(i);
+  el.textContent=opt.label+" — "+opt.prix+" €";
+  formule.appendChild(el);
+ });
+ afficherPrixFormule();
+}
+function afficherPrixFormule(){
+ const p=produits[Number(materiel.value)];
+ const opt=(p[5]||[])[Number(formule.value)||0];
+ prixFormule.textContent=opt?"Tarif indiqué : "+opt.prix+" € (hors livraison et options).":"";
+}
+formule.addEventListener("change",afficherPrixFormule);
+mettreAJourFormules();
+
+// Filtre simple pour retrouver rapidement l'un des matériels.
+const recherche=document.getElementById("recherche");
+function filtrerCatalogue(){
+ const valeur=recherche.value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+ let nombre=0;
+ catalogue.querySelectorAll(".produit").forEach(carte=>{
+  const afficher=carte.dataset.recherche.includes(valeur);
+  carte.hidden=!afficher;
+  if(afficher)nombre++;
+ });
+ document.getElementById("compteur").textContent=nombre+" matériel"+(nombre>1?"s":"")+" affiché"+(nombre>1?"s":"")+" sur "+produits.length;
+}
+recherche.addEventListener("input",filtrerCatalogue);
+filtrerCatalogue();
 
 async function chargerReservations(){
  disponibilitesChargees=false;
@@ -214,7 +306,8 @@ async function chargerReservations(){
   reservations=nouvellesReservations;
   disponibilitesChargees=true;
   envoyer.disabled=false;
-  statut.textContent="Disponibilités actualisées depuis BAT LOCATION. Toute demande reste soumise à confirmation.";
+  statut.textContent="Disponibilités consultées. Une réservation n’est confirmée qu’après accord de BAT LOCATION.";
+  envoyer.textContent="Envoyer la demande sur WhatsApp";
   if(debut.value&&fin.value&&periodeReservee(debut.value,fin.value)){
    message.textContent="La période choisie n'est plus disponible.";
   }
@@ -222,9 +315,11 @@ async function chargerReservations(){
   console.error("Chargement des réservations :",erreur);
   reservations={};
   disponibilitesChargees=false;
-  envoyer.disabled=true;
-  statut.textContent="Impossible de vérifier les réservations. Réessayez en actualisant la page.";
-  message.textContent="Les demandes sont temporairement désactivées.";
+  // Mode dégradé : calendrier grisé, demandes WhatsApp possibles sans afficher de fausses disponibilités.
+  envoyer.disabled=false;
+  envoyer.textContent="Demander confirmation sur WhatsApp";
+  statut.textContent="Calendrier temporairement indisponible : aucune date n'est vérifiée. Saisissez vos dates ci-dessous et demandez confirmation sur WhatsApp.";
+  message.textContent="";
  }
  afficherCalendrier();
 }
@@ -377,23 +472,18 @@ function verifierDates(){
 const d=debut.value;
 const f=fin.value;
 
-if(!disponibilitesChargees){
-message.textContent="Disponibilités indisponibles. Actualisez la page.";
-return false;
-}
-
 if(!d||!f||d<dateAujourdhui()||f<d){
 message.textContent="Veuillez choisir des dates valides.";
 return false;
 }
 
-if(periodeReservee(d,f)){
+if(disponibilitesChargees && periodeReservee(d,f)){
 message.textContent=
 "Ce matériel est déjà réservé sur une partie de cette période.";
 return false;
 }
 
-message.textContent="";
+message.textContent=disponibilitesChargees?"":"Disponibilité non vérifiée automatiquement : seule notre confirmation est valable.";
 return true;
 }
 
@@ -408,18 +498,21 @@ envoyer.disabled=!disponibilitesChargees;
 return;
 }
 
-const nom=produits[Number(materiel.value)][0];
+const p=produits[Number(materiel.value)];
+const choix=(p[5]||[])[Number(formule.value)||0];
+const info=choix?" ("+choix.label+", "+choix.prix+" €)":" ("+p[1]+" € / 24 h)";
 const texte=
-"Bonjour BAT LOCATION, je souhaite louer "+nom+
+"Bonjour BAT LOCATION, je souhaite louer "+p[0]+info+
 " du "+debut.value+" au "+fin.value+
-". Pouvez-vous confirmer sa disponibilité ?";
+". Pouvez-vous confirmer la disponibilité et le tarif total ?";
 
-const lien="https://wa.me/?text="+encodeURIComponent(texte);
+const lien="https://wa.me/33616225718?text="+encodeURIComponent(texte);
 envoyer.disabled=false;
 window.location.href=lien;
 }
 
 materiel.addEventListener("change",()=>{
+mettreAJourFormules();
 reinitialiserDates();
 afficherCalendrier();
 });
